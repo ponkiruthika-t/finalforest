@@ -1999,7 +1999,7 @@ function logout(){
 
 /* AUTH CHECK */
 
-const BACKEND_BASE = "http://localhost:3000";
+const BACKEND_BASE = "https://finalforest-3.onrender.com";
 
 async function fetchBackend(path, options = {}) {
     const url = `${BACKEND_BASE}${path.startsWith("/") ? path : `/${path}`}`;
