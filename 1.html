@@ -1,0 +1,3361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ForestGuard - AI Forest Monitoring</title>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1"></script>
+
+<style>
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+    font-family:Arial,Helvetica,sans-serif;
+}
+
+:root{
+    --bg:#07140f;
+    --panel:#0d2118;
+    --panel2:#10291e;
+    --green:#38c172;
+    --green2:#78e08f;
+    --white:#f4fff8;
+    --muted:#91a99b;
+    --red:#ff4d4d;
+    --orange:#ff9f43;
+    --yellow:#feca57;
+    --border:#1d3b2b;
+}
+
+body{
+    background:var(--bg);
+    color:var(--white);
+    min-height:100vh;
+}
+
+/* LOGIN */
+
+#loginScreen{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    background:
+    radial-gradient(circle at top right,#174d31 0,transparent 35%),
+    radial-gradient(circle at bottom left,#0e3924 0,transparent 35%),
+    #06120d;
+}
+
+.login-box{
+    width:100%;
+    max-width:430px;
+    background:rgba(13,33,24,.96);
+    border:1px solid #28553c;
+    border-radius:20px;
+    padding:35px;
+    box-shadow:0 20px 70px rgba(0,0,0,.5);
+}
+
+.logo{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin-bottom:25px;
+}
+
+.logo-icon{
+    width:52px;
+    height:52px;
+    border-radius:14px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#123d27;
+    font-size:27px;
+}
+
+.logo h1{
+    font-size:24px;
+}
+
+.logo span{
+    color:var(--green2);
+    font-size:12px;
+}
+
+.login-box h2{
+    margin-bottom:8px;
+}
+
+.login-box p{
+    color:var(--muted);
+    margin-bottom:25px;
+    font-size:14px;
+}
+
+.input{
+    width:100%;
+    padding:14px;
+    margin:8px 0 14px;
+    border-radius:10px;
+    border:1px solid #31533f;
+    background:#081a12;
+    color:white;
+    outline:none;
+}
+
+.input:focus{
+    border-color:var(--green);
+}
+
+.btn{
+    border:0;
+    padding:11px 16px;
+    border-radius:9px;
+    cursor:pointer;
+    font-weight:bold;
+    transition:.2s;
+}
+
+.btn:hover{
+    transform:translateY(-1px);
+}
+
+.btn-green{
+    background:var(--green);
+    color:#06120d;
+}
+
+.btn-dark{
+    background:#183426;
+    color:white;
+    border:1px solid #2b513c;
+}
+
+.btn-red{
+    background:var(--red);
+    color:white;
+}
+
+.btn-orange{
+    background:var(--orange);
+    color:#201304;
+}
+
+.btn-blue{
+    background:#3c8dbc;
+    color:white;
+}
+
+.full{
+    width:100%;
+}
+
+.login-error{
+    color:#ff7777;
+    margin-top:12px;
+    font-size:13px;
+}
+
+.demo-login{
+    margin-top:20px;
+    padding:12px;
+    border-radius:10px;
+    background:#10291e;
+    color:#a7c5b3;
+    font-size:12px;
+}
+
+/* APP */
+
+#app{
+    display:none;
+    min-height:100vh;
+}
+
+.sidebar{
+    width:255px;
+    position:fixed;
+    left:0;
+    top:0;
+    bottom:0;
+    background:#071a11;
+    border-right:1px solid var(--border);
+    padding:20px 14px;
+    z-index:20;
+    overflow-y:auto;
+}
+
+.sidebar-logo{
+    padding:8px 12px 22px;
+    border-bottom:1px solid var(--border);
+    margin-bottom:15px;
+}
+
+.sidebar-logo h2{
+    font-size:20px;
+}
+
+.sidebar-logo small{
+    color:var(--green2);
+}
+
+.nav-title{
+    font-size:10px;
+    color:#688575;
+    padding:14px 12px 7px;
+    text-transform:uppercase;
+    letter-spacing:1px;
+}
+
+.nav-btn{
+    width:100%;
+    padding:12px;
+    background:transparent;
+    color:#a9c0b3;
+    border:0;
+    border-radius:9px;
+    text-align:left;
+    cursor:pointer;
+    margin-bottom:3px;
+    font-size:14px;
+}
+
+.nav-btn:hover,
+.nav-btn.active{
+    background:#123b27;
+    color:white;
+}
+
+.main{
+    margin-left:255px;
+    min-height:100vh;
+}
+
+.topbar{
+    height:70px;
+    background:#091b12;
+    border-bottom:1px solid var(--border);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 25px;
+    position:sticky;
+    top:0;
+    z-index:10;
+}
+
+.status{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    font-size:13px;
+    color:#a9c0b3;
+}
+
+.dot{
+    width:9px;
+    height:9px;
+    border-radius:50%;
+    background:var(--green);
+    box-shadow:0 0 8px var(--green);
+}
+
+.operator{
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+
+.operator-avatar{
+    width:34px;
+    height:34px;
+    border-radius:50%;
+    background:#1c5a38;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.content{
+    padding:25px;
+}
+
+.page{
+    display:none;
+}
+
+.page.active{
+    display:block;
+}
+
+.page-title{
+    margin-bottom:22px;
+}
+
+.page-title h1{
+    font-size:27px;
+}
+
+.page-title p{
+    color:var(--muted);
+    margin-top:5px;
+    font-size:14px;
+}
+
+.cards{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:15px;
+    margin-bottom:20px;
+}
+
+.card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:13px;
+    padding:18px;
+}
+
+.stat-card{
+    position:relative;
+    overflow:hidden;
+}
+
+.stat-card .icon{
+    position:absolute;
+    right:17px;
+    top:17px;
+    font-size:25px;
+}
+
+.stat-card h4{
+    color:#8ca596;
+    font-size:12px;
+    text-transform:uppercase;
+}
+
+.stat-number{
+    font-size:29px;
+    font-weight:bold;
+    margin-top:10px;
+}
+
+.green{
+    color:var(--green2);
+}
+
+.red{
+    color:#ff7070;
+}
+
+.orange{
+    color:#ffb25c;
+}
+
+.yellow{
+    color:#ffe082;
+}
+
+.muted{
+    color:var(--muted);
+}
+
+.grid2{
+    display:grid;
+    grid-template-columns:1.5fr 1fr;
+    gap:18px;
+}
+
+.grid3{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:15px;
+}
+
+.section-title{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:15px;
+}
+
+.section-title h3{
+    font-size:16px;
+}
+
+.badge{
+    display:inline-block;
+    padding:5px 9px;
+    border-radius:20px;
+    font-size:11px;
+    font-weight:bold;
+}
+
+.badge-green{
+    background:#123e28;
+    color:#6ee89a;
+}
+
+.badge-red{
+    background:#4a1818;
+    color:#ff8787;
+}
+
+.badge-orange{
+    background:#4c2d10;
+    color:#ffc071;
+}
+
+.badge-yellow{
+    background:#493e12;
+    color:#ffe082;
+}
+
+.badge-blue{
+    background:#12394d;
+    color:#76c8f1;
+}
+
+/* CHART */
+
+.chart{
+    height:230px;
+    display:flex;
+    align-items:flex-end;
+    gap:14px;
+    padding:15px 5px 5px;
+}
+
+.bar{
+    flex:1;
+    background:linear-gradient(to top,#1f7547,#55d487);
+    border-radius:5px 5px 0 0;
+    min-height:15px;
+    position:relative;
+}
+
+.bar span{
+    position:absolute;
+    bottom:-22px;
+    width:100%;
+    text-align:center;
+    font-size:10px;
+    color:#718c7c;
+}
+
+/* TABLE */
+
+.table-wrap{
+    overflow-x:auto;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+th,td{
+    padding:12px 10px;
+    border-bottom:1px solid #193528;
+    text-align:left;
+    font-size:12px;
+    white-space:nowrap;
+}
+
+th{
+    color:#799184;
+    font-size:10px;
+    text-transform:uppercase;
+}
+
+tr:hover{
+    background:#10281c;
+}
+
+/* ALERT */
+
+.alert{
+    border-left:4px solid;
+    padding:14px;
+    background:#0c2117;
+    border-radius:8px;
+    margin-bottom:10px;
+}
+
+.alert-critical{
+    border-color:var(--red);
+}
+
+.alert-high{
+    border-color:var(--orange);
+}
+
+.alert-medium{
+    border-color:var(--yellow);
+}
+
+.alert-head{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+}
+
+.alert p{
+    color:#9cb1a5;
+    font-size:12px;
+    margin:7px 0;
+}
+
+.actions{
+    display:flex;
+    gap:7px;
+    flex-wrap:wrap;
+}
+
+/* CAMERA */
+
+.camera-container{
+    background:#020706;
+    border:1px solid #274634;
+    border-radius:15px;
+    min-height:420px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    position:relative;
+}
+
+#video{
+    width:100%;
+    max-height:500px;
+    object-fit:cover;
+    display:none;
+}
+
+.camera-placeholder{
+    text-align:center;
+    color:#648071;
+}
+
+.camera-overlay{
+    position:absolute;
+    left:15px;
+    top:15px;
+    right:15px;
+    display:flex;
+    justify-content:space-between;
+    pointer-events:none;
+}
+
+.camera-controls{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-top:14px;
+}
+
+.capture-preview{
+    max-width:100%;
+    max-height:350px;
+    border-radius:10px;
+}
+
+/* UPLOAD */
+
+.upload-box{
+    border:2px dashed #315a42;
+    border-radius:15px;
+    padding:45px;
+    text-align:center;
+    background:#0b1f15;
+    cursor:pointer;
+}
+
+.upload-box:hover{
+    background:#10291c;
+}
+
+#uploadedImage{
+    max-width:100%;
+    max-height:400px;
+    margin-top:20px;
+    border-radius:12px;
+    display:none;
+}
+
+/* MAP */
+
+.map{
+    min-height:500px;
+    position:relative;
+    overflow:hidden;
+    border-radius:15px;
+    border:1px solid #345740;
+    background:
+      linear-gradient(25deg,transparent 48%,rgba(92,140,90,.22) 49%,rgba(92,140,90,.22) 51%,transparent 52%),
+      linear-gradient(-25deg,transparent 48%,rgba(92,140,90,.15) 49%,rgba(92,140,90,.15) 51%,transparent 52%),
+      #11291b;
+    background-size:180px 180px;
+}
+
+.map:before{
+    content:"FORESTGUARD MONITORING ZONE";
+    position:absolute;
+    top:20px;
+    left:20px;
+    font-size:13px;
+    color:#75967f;
+    letter-spacing:2px;
+}
+
+.map-marker{
+    position:absolute;
+    cursor:pointer;
+    text-align:center;
+}
+
+.marker-icon{
+    width:38px;
+    height:38px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border:2px solid white;
+    box-shadow:0 5px 15px #000;
+    font-size:17px;
+}
+
+.marker-label{
+    background:#07140f;
+    padding:4px 7px;
+    border-radius:5px;
+    margin-top:4px;
+    font-size:9px;
+    white-space:nowrap;
+}
+
+.camera-marker .marker-icon{
+    background:#1d6b42;
+}
+
+.wild-marker .marker-icon{
+    background:#b06b18;
+}
+
+.fire-marker .marker-icon{
+    background:#b52424;
+}
+
+.human-marker .marker-icon{
+    background:#6e3c8e;
+}
+
+/* ARCHITECTURE */
+
+.architecture{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    flex-wrap:wrap;
+    padding:30px 10px;
+}
+
+.arch-box{
+    padding:17px;
+    background:#102c1d;
+    border:1px solid #326044;
+    border-radius:10px;
+    text-align:center;
+    min-width:130px;
+}
+
+.arrow{
+    color:var(--green2);
+    font-size:25px;
+}
+
+/* TOAST */
+
+#toastContainer{
+    position:fixed;
+    right:20px;
+    top:80px;
+    width:350px;
+    z-index:100;
+}
+
+.toast{
+    background:#10251a;
+    border:1px solid #365b42;
+    border-left:5px solid var(--orange);
+    padding:15px;
+    border-radius:10px;
+    box-shadow:0 15px 40px rgba(0,0,0,.4);
+    margin-bottom:10px;
+    animation:slide .3s;
+}
+
+.toast.critical{
+    border-left-color:var(--red);
+}
+
+.toast-title{
+    font-weight:bold;
+    margin-bottom:5px;
+}
+
+.toast-text{
+    color:#9db4a6;
+    font-size:12px;
+}
+
+@keyframes slide{
+    from{transform:translateX(100%);opacity:0}
+    to{transform:translateX(0);opacity:1}
+}
+
+/* MOBILE */
+
+.mobile-menu{
+    display:none;
+    background:none;
+    border:0;
+    color:white;
+    font-size:22px;
+}
+
+@media(max-width:1050px){
+    .cards{
+        grid-template-columns:repeat(2,1fr);
+    }
+
+    .grid2{
+        grid-template-columns:1fr;
+    }
+
+    .grid3{
+        grid-template-columns:1fr;
+    }
+}
+
+@media(max-width:750px){
+
+    .sidebar{
+        transform:translateX(-100%);
+        transition:.3s;
+    }
+
+    .sidebar.open{
+        transform:translateX(0);
+    }
+
+    .main{
+        margin-left:0;
+    }
+
+    .mobile-menu{
+        display:block;
+    }
+
+    .topbar{
+        padding:0 14px;
+    }
+
+    .content{
+        padding:15px;
+    }
+
+    .cards{
+        grid-template-columns:1fr 1fr;
+        gap:10px;
+    }
+
+    .stat-number{
+        font-size:23px;
+    }
+
+    .operator span{
+        display:none;
+    }
+
+    #toastContainer{
+        left:10px;
+        right:10px;
+        width:auto;
+    }
+}
+
+@media(max-width:450px){
+
+    .cards{
+        grid-template-columns:1fr;
+    }
+
+    .login-box{
+        padding:25px;
+    }
+
+    .camera-container{
+        min-height:280px;
+    }
+}
+
+/* SENSOR */
+
+.sensor-value{
+    font-size:30px;
+    font-weight:bold;
+    margin:10px 0;
+}
+
+.progress{
+    height:8px;
+    background:#193528;
+    border-radius:10px;
+    overflow:hidden;
+}
+
+.progress div{
+    height:100%;
+    background:var(--green);
+}
+
+/* MODAL */
+
+.modal{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.75);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:90;
+    padding:20px;
+}
+
+.modal-box{
+    width:100%;
+    max-width:600px;
+    max-height:90vh;
+    overflow:auto;
+    background:#0d2118;
+    border:1px solid #315b40;
+    border-radius:15px;
+    padding:22px;
+}
+
+.close{
+    float:right;
+    cursor:pointer;
+    font-size:22px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+
+<section id="loginScreen">
+
+<div class="login-box">
+
+    <div class="logo">
+        <div class="logo-icon">🌲</div>
+        <div>
+            <h1>ForestGuard</h1>
+            <span>AI SMART FOREST SECURITY</span>
+        </div>
+    </div>
+
+    <h2>Control Room Login</h2>
+
+    <p>
+        Authorized personnel only. Sign in to access
+        forest monitoring operations.
+    </p>
+
+    <input
+        id="email"
+        class="input"
+        type="email"
+        placeholder="Control room email"
+    >
+
+    <input
+        id="password"
+        class="input"
+        type="password"
+        placeholder="Password"
+    >
+
+    <button class="btn btn-green full" onclick="login()">
+        SIGN IN
+    </button>
+
+    <button
+        class="btn btn-dark full"
+        style="margin-top:10px"
+        onclick="forgotPassword()">
+        Forgot Password?
+    </button>
+
+    <div id="loginError" class="login-error"></div>
+
+    <div class="demo-login">
+        <b>Demo Credentials</b><br><br>
+        Email: admin@forestguard.local<br>
+        Password: Forest@123
+    </div>
+
+</div>
+
+</section>
+
+
+<!-- APPLICATION -->
+
+<div id="app">
+
+<!-- SIDEBAR -->
+
+<aside class="sidebar" id="sidebar">
+
+    <div class="sidebar-logo">
+        <h2>🌲 ForestGuard</h2>
+        <small>AI FOREST SECURITY</small>
+    </div>
+
+    <div class="nav-title">Control Room</div>
+
+    <button class="nav-btn active" onclick="showPage('dashboard',this)">
+        🖥️ Dashboard
+    </button>
+
+    <button class="nav-btn" onclick="showPage('camera',this)">
+        📹 Live Camera
+    </button>
+
+    <button class="nav-btn" onclick="showPage('detection',this)">
+        🔍 Image Detection
+    </button>
+
+    <button class="nav-btn" onclick="showPage('alerts',this)">
+        🚨 Control Room Alerts
+    </button>
+
+    <button class="nav-btn" onclick="showPage('history',this)">
+        🗂️ Detection History
+    </button>
+
+    <div class="nav-title">Monitoring</div>
+
+    <button class="nav-btn" onclick="showPage('map',this)">
+        🗺️ Forest Map
+    </button>
+
+    <button class="nav-btn" onclick="showPage('cameras',this)">
+        📡 Camera Management
+    </button>
+
+    <button class="nav-btn" onclick="showPage('sensors',this)">
+        🌡️ Fire & Sensors
+    </button>
+
+    <div class="nav-title">System</div>
+
+    <button class="nav-btn" onclick="showPage('architecture',this)">
+        ⚙️ Architecture
+    </button>
+
+    <button class="nav-btn" onclick="showPage('demo',this)">
+        🧪 Demo Mode
+    </button>
+
+    <button class="nav-btn" onclick="logout()">
+        🚪 Logout
+    </button>
+
+</aside>
+
+
+<!-- MAIN -->
+
+<main class="main">
+
+<header class="topbar">
+
+    <button class="mobile-menu" onclick="toggleSidebar()">☰</button>
+
+    <div class="status">
+        <span class="dot"></span>
+        CONTROL ROOM ONLINE
+    </div>
+
+    <div class="operator">
+        <span>Operator: Admin</span>
+        <div class="operator-avatar">👤</div>
+    </div>
+
+</header>
+
+
+<div class="content">
+
+
+<!-- DASHBOARD -->
+
+<section id="dashboard" class="page active">
+
+<div class="page-title">
+    <h1>Forest Control Room</h1>
+    <p>AI-based forest monitoring and security overview</p>
+</div>
+
+<div class="cards">
+
+<div class="card stat-card">
+    <div class="icon">🎯</div>
+    <h4>Total Detections</h4>
+    <div class="stat-number green" id="totalDetections">0</div>
+</div>
+
+<div class="card stat-card">
+    <div class="icon">🐘</div>
+    <h4>Wildlife</h4>
+    <div class="stat-number green" id="wildlifeCount">0</div>
+</div>
+
+<div class="card stat-card">
+    <div class="icon">🐄</div>
+    <h4>Domestic</h4>
+    <div class="stat-number" id="domesticCount">0</div>
+</div>
+
+<div class="card stat-card">
+    <div class="icon">🚨</div>
+    <h4>Unauthorized Human</h4>
+    <div class="stat-number red" id="humanCount">0</div>
+</div>
+
+<div class="card stat-card">
+    <div class="icon">🏹</div>
+    <h4>Hunting</h4>
+    <div class="stat-number red" id="huntingCount">0</div>
+</div>
+
+<div class="card stat-card">
+    <div class="icon">🔥</div>
+    <h4>Fire</h4>
+    <div class="stat-number red" id="fireCount">0</div>
+</div>
+
+<div class="card stat-card">
+    <div class="icon">⚠️</div>
+    <h4>Active Alerts</h4>
+    <div class="stat-number orange" id="activeAlerts">0</div>
+</div>
+
+<div class="card stat-card">
+    <div class="icon">🤖</div>
+    <h4>AI Backend</h4>
+    <div class="stat-number green" style="font-size:16px">
+        READY
+    </div>
+</div>
+
+</div>
+
+
+<div class="grid2">
+
+<div class="card">
+
+<div class="section-title">
+    <h3>Detection Activity</h3>
+    <span class="badge badge-green">LAST 7 DAYS</span>
+</div>
+
+<div class="chart" id="chart"></div>
+
+</div>
+
+
+<div class="card">
+
+<div class="section-title">
+    <h3>System Status</h3>
+</div>
+
+<div class="alert alert-high">
+    <b>📹 Camera Network</b>
+    <p>2 cameras online · 1 offline</p>
+    <span class="badge badge-green">MONITORING</span>
+</div>
+
+<div class="alert alert-high">
+    <b>📡 Communication</b>
+    <p>Control room communication operational</p>
+    <span class="badge badge-green">ONLINE</span>
+</div>
+
+<div class="alert alert-medium">
+    <b>🤖 YOLOv8 Backend</b>
+    <p>Model connection point ready. No trained model connected.</p>
+    <span class="badge badge-yellow">NOT CONNECTED</span>
+</div>
+
+</div>
+
+</div>
+
+
+<div class="card" style="margin-top:18px">
+
+<div class="section-title">
+    <h3>Recent Detection Events</h3>
+
+    <button
+      class="btn btn-dark"
+      onclick="showPage('history')">
+      View History
+    </button>
+</div>
+
+<div class="table-wrap">
+
+<table>
+
+<thead>
+<tr>
+<th>Object</th>
+<th>Classification</th>
+<th>Confidence</th>
+<th>Threat</th>
+<th>Location</th>
+<th>Time</th>
+</tr>
+</thead>
+
+<tbody id="recentTable"></tbody>
+
+</table>
+
+</div>
+
+</div>
+
+</section>
+
+
+<!-- LIVE CAMERA -->
+
+<section id="camera" class="page">
+
+<div class="page-title">
+    <h1>Live Camera</h1>
+    <p>Browser camera simulation for field monitoring</p>
+</div>
+
+<div class="grid2">
+
+<div>
+
+<div class="camera-container">
+
+<video id="video" autoplay playsinline></video>
+
+<div class="camera-placeholder" id="cameraPlaceholder">
+    <div style="font-size:50px">📹</div>
+    <h3>Camera Offline</h3>
+    <p>Start the browser camera to simulate a field camera.</p>
+</div>
+
+<div class="camera-overlay">
+    <span class="badge badge-green" id="cameraStatus">
+        CAMERA OFFLINE
+    </span>
+
+    <span class="badge badge-blue">
+        CAM-001
+    </span>
+</div>
+
+</div>
+
+<div class="camera-controls">
+
+<button class="btn btn-green" onclick="startCamera()">
+    ▶ Start Camera
+</button>
+
+<button class="btn btn-red" onclick="stopCamera()">
+    ■ Stop Camera
+</button>
+
+<button class="btn btn-dark" onclick="captureFrame()">
+    📸 Capture Frame
+</button>
+
+<button class="btn btn-orange" onclick="analyzeCaptured()">
+    🤖 Analyze Frame
+</button>
+
+</div>
+
+<canvas id="canvas" style="display:none"></canvas>
+
+</div>
+
+
+<div class="card">
+
+<div class="section-title">
+    <h3>Detection Result</h3>
+    <span id="cameraAIStatus" class="badge badge-yellow">
+        DEMO / MODEL READY
+    </span>
+</div>
+
+<div id="cameraResult">
+
+<div style="text-align:center;padding:40px 10px;color:#6f897b">
+    <div style="font-size:40px">🔍</div>
+    <p>No frame analyzed.</p>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="card" style="margin-top:18px">
+
+<h3>Camera Information</h3>
+
+<br>
+
+<div class="grid3">
+
+<div>
+<span class="muted">Camera ID</span>
+<h3>CAM-001</h3>
+</div>
+
+<div>
+<span class="muted">Location</span>
+<h3>Forest Entrance</h3>
+</div>
+
+<div>
+<span class="muted">Type</span>
+<h3>Browser / Raspberry Pi Simulation</h3>
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+
+<!-- IMAGE DETECTION -->
+
+<section id="detection" class="page">
+
+<div class="page-title">
+    <h1>AI Image Detection</h1>
+    <p>Upload an image for the YOLOv8-ready detection pipeline</p>
+</div>
+
+<div class="grid2">
+
+<div class="card">
+
+<div class="upload-box"
+onclick="document.getElementById('imageInput').click()">
+
+<div style="font-size:45px">📁</div>
+
+<h3>Upload Forest Image</h3>
+
+<p class="muted">
+JPG · JPEG · PNG · WEBP
+</p>
+
+</div>
+
+<input
+    id="imageInput"
+    type="file"
+    accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+    hidden
+    onchange="previewImage(event)"
+>
+
+<img id="uploadedImage">
+
+<button
+class="btn btn-orange full"
+style="margin-top:15px"
+onclick="analyzeUploadedImage()">
+🤖 Send to AI Detection Backend
+</button>
+
+</div>
+
+
+<div class="card">
+
+<div class="section-title">
+<h3>AI Result</h3>
+<span class="badge badge-yellow">
+YOLOv8 READY
+</span>
+</div>
+
+<div id="imageResult">
+
+<div style="text-align:center;padding:40px;color:#718b7b">
+    Upload an image to begin.
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+
+<!-- ALERTS -->
+
+<section id="alerts" class="page">
+
+<div class="page-title">
+<h1>Control Room Alerts</h1>
+<p>Threat events requiring operator attention</p>
+</div>
+
+<div class="card">
+
+<div id="alertsContainer"></div>
+
+</div>
+
+</section>
+
+
+<!-- HISTORY -->
+
+<section id="history" class="page">
+
+<div class="page-title">
+<h1>Detection History</h1>
+<p>Stored forest monitoring events</p>
+</div>
+
+<div class="card">
+
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px">
+
+<input
+class="input"
+style="max-width:250px;margin:0"
+id="historySearch"
+placeholder="Search detection..."
+oninput="renderHistory()">
+
+<select
+class="input"
+style="max-width:180px;margin:0"
+id="historyType"
+onchange="renderHistory()">
+
+<option value="">All Types</option>
+<option>Wild Animal</option>
+<option>Domestic Animal</option>
+<option>Unauthorized Human</option>
+<option>Hunting Threat</option>
+<option>Forest Fire</option>
+
+</select>
+
+<select
+class="input"
+style="max-width:180px;margin:0"
+id="historyThreat"
+onchange="renderHistory()">
+
+<option value="">All Threats</option>
+<option>NO THREAT</option>
+<option>NORMAL</option>
+<option>MEDIUM</option>
+<option>HIGH</option>
+<option>CRITICAL</option>
+
+</select>
+
+</div>
+
+<div class="table-wrap">
+
+<table>
+
+<thead>
+<tr>
+<th>ID</th>
+<th>Object</th>
+<th>Classification</th>
+<th>Confidence</th>
+<th>Threat</th>
+<th>Location</th>
+<th>Camera</th>
+<th>Date</th>
+<th>Status</th>
+</tr>
+</thead>
+
+<tbody id="historyTable"></tbody>
+
+</table>
+
+</div>
+
+</div>
+
+</section>
+
+
+<!-- MAP -->
+
+<section id="map" class="page">
+
+<div class="page-title">
+<h1>Forest Monitoring Map</h1>
+<p>Simulated geographic control-room view</p>
+</div>
+
+<div class="grid2">
+
+<div class="card">
+
+<div class="map">
+
+<div class="map-marker camera-marker" style="left:18%;top:25%">
+<div class="marker-icon">📹</div>
+<div class="marker-label">CAM-001</div>
+</div>
+
+<div class="map-marker camera-marker" style="left:65%;top:18%">
+<div class="marker-icon">📹</div>
+<div class="marker-label">CAM-002</div>
+</div>
+
+<div class="map-marker fire-marker" style="left:73%;top:65%">
+<div class="marker-icon">🔥</div>
+<div class="marker-label">FIRE EVENT</div>
+</div>
+
+<div class="map-marker wild-marker" style="left:40%;top:53%">
+<div class="marker-icon">🐘</div>
+<div class="marker-label">WILDLIFE</div>
+</div>
+
+<div class="map-marker human-marker" style="left:25%;top:75%">
+<div class="marker-icon">👤</div>
+<div class="marker-label">SECURITY EVENT</div>
+</div>
+
+<div class="map-marker camera-marker" style="left:50%;top:82%">
+<div class="marker-icon">📹</div>
+<div class="marker-label">CAM-003</div>
+</div>
+
+</div>
+
+</div>
+
+
+<div class="card">
+
+<h3>Monitoring Zones</h3>
+<br>
+
+<div class="alert alert-high">
+<b>Forest Zone A</b>
+<p>Wildlife monitoring sector</p>
+</div>
+
+<div class="alert alert-high">
+<b>Forest Zone B</b>
+<p>Fire monitoring sector</p>
+</div>
+
+<div class="alert alert-medium">
+<b>Road Crossing Zone</b>
+<p>Vehicle and human monitoring</p>
+</div>
+
+<div class="alert alert-high">
+<b>Farm Boundary</b>
+<p>Human and wildlife interface</p>
+</div>
+
+<div class="alert alert-critical">
+<b>Restricted Zone</b>
+<p>Security monitoring area</p>
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+
+<!-- CAMERAS -->
+
+<section id="cameras" class="page">
+
+<div class="page-title">
+<h1>Camera Management</h1>
+<p>Forest surveillance camera network</p>
+</div>
+
+<div class="card">
+
+<div class="table-wrap">
+
+<table>
+
+<thead>
+<tr>
+<th>Camera ID</th>
+<th>Name</th>
+<th>Location</th>
+<th>Status</th>
+<th>Last Active</th>
+<th>Camera Type</th>
+</tr>
+</thead>
+
+<tbody>
+
+<tr>
+<td><b>CAM-001</b></td>
+<td>Forest Entrance</td>
+<td>Forest Zone A</td>
+<td><span class="badge badge-green">ONLINE</span></td>
+<td>Just now</td>
+<td>Raspberry Pi Camera</td>
+</tr>
+
+<tr>
+<td><b>CAM-002</b></td>
+<td>Farm Boundary</td>
+<td>Farm Boundary</td>
+<td><span class="badge badge-green">ONLINE</span></td>
+<td>2 min ago</td>
+<td>Raspberry Pi Camera</td>
+</tr>
+
+<tr>
+<td><b>CAM-003</b></td>
+<td>Road Crossing</td>
+<td>Road Crossing Zone</td>
+<td><span class="badge badge-red">OFFLINE</span></td>
+<td>38 min ago</td>
+<td>Raspberry Pi Camera</td>
+</tr>
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+</section>
+
+
+<!-- SENSOR -->
+
+<section id="sensors" class="page">
+
+<div class="page-title">
+<h1>Forest Fire & Sensor Monitoring</h1>
+<p>Temperature, smoke and visual fire monitoring</p>
+</div>
+
+<div class="cards">
+
+<div class="card stat-card">
+
+<div class="icon">🌡️</div>
+
+<h4>Temperature</h4>
+
+<div class="sensor-value" id="temperature">
+32.4°C
+</div>
+
+<div class="progress">
+<div style="width:45%"></div>
+</div>
+
+</div>
+
+<div class="card stat-card">
+
+<div class="icon">💨</div>
+
+<h4>Smoke Level</h4>
+
+<div class="sensor-value green" id="smoke">
+12%
+</div>
+
+<div class="progress">
+<div style="width:12%"></div>
+</div>
+
+</div>
+
+<div class="card stat-card">
+
+<div class="icon">🔥</div>
+
+<h4>Fire Risk</h4>
+
+<div class="sensor-value green" id="fireRisk">
+NORMAL
+</div>
+
+</div>
+
+<div class="card stat-card">
+
+<div class="icon">📡</div>
+
+<h4>Sensor Network</h4>
+
+<div class="sensor-value green">
+ONLINE
+</div>
+
+</div>
+
+</div>
+
+<div class="card">
+
+<div class="section-title">
+<h3>Sensor Monitoring</h3>
+
+<button
+class="btn btn-orange"
+onclick="simulateFire()">
+Simulate Fire Event
+</button>
+
+</div>
+
+<div id="sensorMessage"
+class="alert alert-medium">
+
+<b>SYSTEM NORMAL</b>
+
+<p>
+Temperature and smoke readings are currently within
+the simulated normal range.
+</p>
+
+</div>
+
+</div>
+
+</section>
+
+
+<!-- ARCHITECTURE -->
+
+<section id="architecture" class="page">
+
+<div class="page-title">
+<h1>ForestGuard System Architecture</h1>
+<p>Hardware-to-control-room monitoring pipeline</p>
+</div>
+
+<div class="card">
+
+<div class="architecture">
+
+<div class="arch-box">
+📹<br>
+<b>Camera</b><br>
+<small>Field Image</small>
+</div>
+
+<div class="arrow">→</div>
+
+<div class="arch-box">
+🍓<br>
+<b>Raspberry Pi</b><br>
+<small>Edge Device</small>
+</div>
+
+<div class="arrow">→</div>
+
+<div class="arch-box">
+🤖<br>
+<b>YOLOv8</b><br>
+<small>Object Detection</small>
+</div>
+
+<div class="arrow">→</div>
+
+<div class="arch-box">
+🔎<br>
+<b>Classification</b><br>
+<small>Animal / Human</small>
+</div>
+
+<div class="arrow">→</div>
+
+<div class="arch-box">
+⚠️<br>
+<b>Threat Decision</b><br>
+<small>Risk Engine</small>
+</div>
+
+<div class="arrow">→</div>
+
+<div class="arch-box">
+📡<br>
+<b>LoRa / Internet</b><br>
+<small>Communication</small>
+</div>
+
+<div class="arrow">→</div>
+
+<div class="arch-box">
+🖥️<br>
+<b>Control Room</b><br>
+<small>ForestGuard</small>
+</div>
+
+</div>
+
+<hr style="border-color:#1c392a">
+
+<div style="padding:20px">
+
+<h3>Software Pipeline</h3>
+
+<br>
+
+<p class="muted">
+Camera / Image → AI Detection → Object Classification →
+Threat Decision → Alert Generation → Database Storage →
+Control Room Notification
+</p>
+
+<br>
+
+<span class="badge badge-yellow">
+YOLOv8 MODEL CONNECTION POINT READY
+</span>
+
+<p class="muted" style="margin-top:10px">
+This prototype does not claim to execute YOLOv8 when a trained
+model is unavailable. A real YOLOv8 API can be connected to the
+detection endpoint later.
+</p>
+
+</div>
+
+</div>
+
+</section>
+
+
+<!-- DEMO -->
+
+<section id="demo" class="page">
+
+<div class="page-title">
+<h1>Demo Mode</h1>
+<p>Software demonstration without Raspberry Pi hardware</p>
+</div>
+
+<div class="card">
+
+<div class="alert alert-medium">
+
+<b>🧪 DEMO MODE ACTIVE</b>
+
+<p>
+These controls simulate events for engineering-project
+demonstration. They do not represent real field detections.
+</p>
+
+</div>
+
+<div class="grid3">
+
+<button
+class="btn btn-green"
+onclick="demoEvent('wildlife')">
+🐘 Generate Wildlife Alert
+</button>
+
+<button
+class="btn btn-dark"
+onclick="demoEvent('domestic')">
+🐄 Generate Domestic Animal
+</button>
+
+<button
+class="btn btn-orange"
+onclick="demoEvent('human')">
+👤 Generate Human Intrusion
+</button>
+
+<button
+class="btn btn-red"
+onclick="demoEvent('hunting')">
+🏹 Generate Hunting Alert
+</button>
+
+<button
+class="btn btn-red"
+onclick="demoEvent('fire')">
+🔥 Generate Fire Alert
+</button>
+
+<button
+class="btn btn-dark"
+onclick="demoEvent('none')">
+✅ Generate No Detection
+</button>
+
+</div>
+
+</div>
+
+
+<div class="card" style="margin-top:18px">
+
+<h3>Warning Sound Control</h3>
+
+<p class="muted" style="margin:7px 0 15px">
+Demonstration warning mechanism for wildlife events.
+It does not claim to deter animals.
+</p>
+
+<div class="actions">
+
+<button class="btn btn-green" onclick="playWarning()">
+🔊 Play Warning
+</button>
+
+<button class="btn btn-red" onclick="stopWarning()">
+⏹ Stop Warning
+</button>
+
+<button class="btn btn-dark" onclick="toggleMute()">
+🔇 Mute / Unmute
+</button>
+
+</div>
+
+<div id="soundStatus"
+style="margin-top:15px"
+class="badge badge-green">
+SOUND READY
+</div>
+
+</div>
+
+</section>
+
+
+</div>
+</main>
+</div>
+
+
+<!-- TOAST -->
+
+<div id="toastContainer"></div>
+
+
+<!-- MODAL -->
+
+<div class="modal" id="detailsModal">
+
+<div class="modal-box">
+
+<span class="close" onclick="closeModal()">×</span>
+
+<h2>Detection Details</h2>
+
+<br>
+
+<div id="modalContent"></div>
+
+</div>
+
+</div>
+
+
+<script>
+
+/* =====================================================
+   FORESTGUARD SINGLE-FILE APPLICATION
+   ===================================================== */
+
+/* DATABASE */
+
+let detections =
+JSON.parse(localStorage.getItem("forestguard_detections") || "[]");
+
+let alerts =
+JSON.parse(localStorage.getItem("forestguard_alerts") || "[]");
+
+alerts = alerts.filter(alert => !["Domestic Animal", "Domestic animal"].includes(alert.alert_type));
+localStorage.setItem("forestguard_alerts", JSON.stringify(alerts));
+
+let stream = null;
+let capturedImage = null;
+let uploadedFile = null;
+let mobileNetModel = null;
+let audioContext = null;
+let soundMuted = false;
+
+
+/* LOGIN */
+
+function login(){
+
+    const email =
+        document.getElementById("email").value.trim();
+
+    const password =
+        document.getElementById("password").value;
+
+    if(
+        email === "admin@forestguard.local" &&
+        password === "Forest@123"
+    ){
+
+        localStorage.setItem(
+            "forestguard_authenticated",
+            "true"
+        );
+
+        document.getElementById("loginScreen").style.display="none";
+        document.getElementById("app").style.display="block";
+
+        initialize();
+
+    }else{
+
+        document.getElementById("loginError").textContent =
+        "Invalid credentials. Use the demo credentials shown below.";
+
+    }
+}
+
+
+function forgotPassword(){
+
+    alert(
+        "For the project prototype, password recovery is simulated.\n\n" +
+        "Contact the system administrator to reset the control-room password."
+    );
+}
+
+
+function logout(){
+
+    if(confirm("Logout from ForestGuard control room?")){
+
+        localStorage.removeItem(
+            "forestguard_authenticated"
+        );
+
+        location.reload();
+    }
+}
+
+
+/* AUTH CHECK */
+
+const BACKEND_BASE = "http://localhost:3000";
+
+async function fetchBackend(path, options = {}) {
+    const url = `${BACKEND_BASE}${path.startsWith("/") ? path : `/${path}`}`;
+    return fetch(url, options);
+}
+
+function checkAuth(){
+
+    if(
+        localStorage.getItem(
+            "forestguard_authenticated"
+        ) === "true"
+    ){
+
+        document.getElementById("loginScreen").style.display="none";
+        document.getElementById("app").style.display="block";
+
+        initialize();
+    }
+}
+
+
+/* INITIALIZATION */
+
+function initialize(){
+
+    renderDashboard();
+    renderHistory();
+    renderAlerts();
+    updateChart();
+    checkYoloStatus();
+    loadMobileNet();
+}
+
+async function loadMobileNet(){
+    try { mobileNetModel = await mobilenet.load(); }
+    catch { showToast("LOCAL IMAGE MODEL OFFLINE", "The browser could not load MobileNet.", true); }
+}
+
+async function checkYoloStatus(){
+    try{
+        const response = await fetchBackend("/api/yolo-status");
+        const status = await response.json();
+        const label = document.getElementById("cameraAIStatus");
+        if(label){ label.textContent = status.online ? "YOLOv8 ONLINE" : "YOLOv8 OFFLINE"; label.className = status.online ? "badge badge-green" : "badge badge-red"; }
+    }catch{
+        const label = document.getElementById("cameraAIStatus");
+        if(label){ label.textContent = "BACKEND OFFLINE"; label.className = "badge badge-red"; }
+    }
+}
+
+
+/* NAVIGATION */
+
+function showPage(page,button){
+
+    document
+    .querySelectorAll(".page")
+    .forEach(p => p.classList.remove("active"));
+
+    const target =
+        document.getElementById(page);
+
+    if(target){
+        target.classList.add("active");
+    }
+
+    document
+    .querySelectorAll(".nav-btn")
+    .forEach(b => b.classList.remove("active"));
+
+    if(button){
+        button.classList.add("active");
+    }
+
+    document
+    .getElementById("sidebar")
+    .classList.remove("open");
+
+    if(page==="dashboard"){
+        renderDashboard();
+    }
+
+    if(page==="alerts"){
+        renderAlerts();
+    }
+
+    if(page==="history"){
+        renderHistory();
+    }
+}
+
+
+function toggleSidebar(){
+
+    document
+    .getElementById("sidebar")
+    .classList.toggle("open");
+}
+
+
+/* CAMERA */
+
+async function startCamera(){
+
+    try{
+
+        stream =
+        await navigator.mediaDevices.getUserMedia({
+            video:true,
+            audio:false
+        });
+
+        const video =
+        document.getElementById("video");
+
+        video.srcObject=stream;
+        video.style.display="block";
+
+        document
+        .getElementById("cameraPlaceholder")
+        .style.display="none";
+
+        document
+        .getElementById("cameraStatus")
+        .textContent="CAMERA ONLINE";
+
+        showToast(
+            "CAMERA ONLINE",
+            "Browser camera is active as the simulated field camera.",
+            false
+        );
+
+    }catch(error){
+
+        showToast(
+            "CAMERA ERROR",
+            "Browser camera permission was not available.",
+            true
+        );
+    }
+}
+
+
+function stopCamera(){
+
+    if(stream){
+
+        stream
+        .getTracks()
+        .forEach(track=>track.stop());
+
+        stream=null;
+    }
+
+    const video =
+        document.getElementById("video");
+
+    video.style.display="none";
+
+    document
+    .getElementById("cameraPlaceholder")
+    .style.display="block";
+
+    document
+    .getElementById("cameraStatus")
+    .textContent="CAMERA OFFLINE";
+}
+
+
+function captureFrame(){
+
+    if(!stream){
+
+        showToast(
+            "CAMERA OFFLINE",
+            "Start the camera before capturing a frame.",
+            true
+        );
+
+        return;
+    }
+
+    const video =
+        document.getElementById("video");
+
+    const canvas =
+        document.getElementById("canvas");
+
+    canvas.width=video.videoWidth;
+    canvas.height=video.videoHeight;
+
+    const ctx =
+        canvas.getContext("2d");
+
+    ctx.drawImage(
+        video,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    capturedImage =
+        canvas.toDataURL("image/jpeg");
+
+    showToast(
+        "FRAME CAPTURED",
+        "Frame is ready for AI analysis.",
+        false
+    );
+}
+
+
+async function analyzeCaptured(){
+    unlockAudio();
+
+    if(!capturedImage){
+
+        showToast(
+            "NO FRAME",
+            "Capture a frame first.",
+            true
+        );
+
+        return;
+    }
+
+    try {
+        const blob = await (await fetch(capturedImage)).blob();
+        const result = await sendImageToBackend(blob, "camera-frame.jpg", "Live camera");
+        document.getElementById("cameraResult").innerHTML = resultHTML(result);
+        if (result.classification !== "Domestic Animal" && (result.threat_level === "CRITICAL" || result.threat_level === "HIGH")) playWarning();
+    } catch (error) {
+        showToast("YOLO DETECTION FAILED", error.message, true);
+    }
+}
+
+
+/* IMAGE UPLOAD */
+
+function previewImage(event){
+
+    const file =
+        event.target.files[0];
+
+    if(!file) return;
+
+    const allowed=[
+        "image/jpeg",
+        "image/png",
+        "image/webp"
+    ];
+
+    if(!allowed.includes(file.type)){
+
+        alert(
+            "Please upload JPG, JPEG, PNG or WEBP."
+        );
+
+        return;
+    }
+
+    uploadedFile=file;
+
+    const reader =
+        new FileReader();
+
+    reader.onload=function(e){
+
+        const image =
+            document.getElementById("uploadedImage");
+
+        image.src=e.target.result;
+        image.style.display="block";
+    };
+
+    reader.readAsDataURL(file);
+}
+
+
+async function analyzeUploadedImage(){
+    unlockAudio();
+
+    if(!uploadedFile){
+
+        showToast(
+            "NO IMAGE",
+            "Upload an image before analysis.",
+            true
+        );
+
+        return;
+    }
+
+    try {
+        const result = await sendImageToBackend(uploadedFile, uploadedFile.name, "Image upload");
+        document.getElementById("imageResult").innerHTML = resultHTML(result);
+        if(result.classification !== "Domestic Animal" && (result.threat_level === "CRITICAL" || result.threat_level === "HIGH")) await playWarning();
+    } catch (error) {
+        document.getElementById("imageResult").innerHTML = `<div class="alert alert-critical"><b>YOLO BACKEND ERROR</b><p>${escapeHtml(error.message)}</p></div>`;
+        showToast("YOLO DETECTION FAILED", error.message, true);
+    }
+}
+
+async function sendImageToBackend(file, fileName, source){
+    const formData = new FormData();
+    formData.append("image", file, fileName);
+    formData.append("source", source);
+    formData.append("zone", "Forest Zone A");
+    const localResult = await classifyWithMobileNet(file);
+    if(localResult){
+        formData.append("modelResult", JSON.stringify(localResult));
+        formData.append("modelProvider", "browser-mobilenet");
+    }
+    let response;
+    try {
+        response = await fetchBackend("/api/detect", { method: "POST", body: formData });
+    } catch {
+        throw new Error("Cannot reach the Node backend. Start npm start and open html.html from http://localhost:3000/html.html."); 
+    } 
+    const payload = await response.json(); 
+    if(!response.ok) throw new Error(payload.error || "The YOLO backend rejected the image."); 
+    const classificationMap = { 
+        "Wild animal": ["Wild Animal", "HIGH", "WILDLIFE DETECTED"], 
+        "Domestic animal": ["Domestic Animal", "NO THREAT", "DOMESTIC ANIMAL - NO ALERT"], 
+        "Fire / smoke": ["Forest Fire", "CRITICAL", "FIRE DETECTED"], 
+        "Human intrusion": ["Hunting Threat", "CRITICAL", "UNAUTHORIZED HUNTING DETECTED"], 
+        "No threat": ["No Threat", "NO THREAT", "NO THREAT DETECTED"] 
+    }; 
+    const mapped = classificationMap[payload.label] || classificationMap["No threat"]; 
+    const detection = createDetection(payload.raw_label || payload.label, mapped[0], Math.round(Number(payload.confidence || 0) * 100), mapped[1], payload.zone || "Forest Zone A", mapped[2]); 
+    detection.model = payload.model || "YOLOv8 demo"; 
+    return detection; 
+} 
+async function classifyWithMobileNet(file){ 
+    if(!mobileNetModel) return null; 
+    const image = new Image(); 
+    image.src = URL.createObjectURL(file); 
+    await new Promise((resolve, reject) => { image.onload = resolve; image.onerror = reject; }); 
+    const predictions = await mobileNetModel.classify(image, 5); 
+    const best = predictions[0]; 
+    if(!best) return null; 
+    const value = best.className.toLowerCase(); 
+    const wild = ["lion", "tiger", "leopard", "cheetah", "jaguar", "lynx", "wolf", "fox", "bear", "elephant", "deer", "zebra", "giraffe"]; 
+    const domestic = ["dog", "cat", "cow", "horse", "sheep", "goat", "pig", "ox"]; 
+    const label = wild.some(item => value.includes(item)) ? "Wild animal" : domestic.some(item => value.includes(item)) ? "Domestic animal" : "No threat"; 
+    URL.revokeObjectURL(image.src); 
+    return { label, confidence: best.probability, raw_label: best.className }; 
+} 
+function escapeHtml(value){ return String(value).replace(/[&<>"']/g, character => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[character])); } 
+ 
+ 
+/* DETECTION */ 
+ 
+function createDetection( 
+    objectName, 
+    classification, 
+    confidence, 
+    threat, 
+    location, 
+    message 
+){ 
+ 
+    if(classification === "Domestic Animal" || classification === "Domestic animal"){ 
+        classification = "Domestic Animal"; 
+        threat = "NO THREAT"; 
+        message = "Domestic animal detected. No emergency alert required."; 
+    } 
+ 
+    const now = new Date(); 
+ 
+    const detection={ 
+ 
+        id: 
+            "DET-" + 
+            Date.now().toString().slice(-8), 
+ 
+        camera_id:"CAM-001", 
+ 
+        camera:"CAM-001", 
+ 
+        object_name:objectName, 
+ 
+        classification:classification, 
+ 
+        confidence:confidence, 
+ 
+        threat_level:threat, 
+ 
+        location:location, 
+ 
+        latitude:13.0827, 
+ 
+        longitude:80.2707, 
+ 
+        image_url:"", 
+ 
+        detected_at:now.toISOString(), 
+ 
+        status:"New" 
+ 
+    }; 
+ 
+    detections.unshift(detection); 
+ 
+    localStorage.setItem( 
+        "forestguard_detections", 
+        JSON.stringify(detections) 
+    ); 
+ 
+    if( 
+        classification === "Wild Animal" || 
+        classification === "Unauthorized Human" || 
+        classification === "Hunting Threat" || 
+        classification === "Forest Fire" 
+    ){ 
+ 
+        createAlert( 
+            detection, 
+            classification, 
+            threat, 
+            message 
+        ); 
+    } 
+ 
+    renderDashboard(); 
+    renderHistory(); 
+    renderAlerts(); 
+    updateChart(); 
+ 
+    return detection; 
+} 
+ 
+ 
+function createAlert( 
+    detection, 
+    type, 
+    severity, 
+    message 
+){ 
+ 
+    const alert={ 
+ 
+        id: 
+            "ALT-" + 
+            Date.now().toString().slice(-8), 
+ 
+        detection_id:detection.id, 
+ 
+        alert_type:type, 
+ 
+        severity:severity, 
+ 
+        message:message, 
+ 
+        status:"New", 
+ 
+        created_at:new Date().toISOString(), 
+ 
+        acknowledged_at:null, 
+ 
+        resolved_at:null 
+ 
+    }; 
+ 
+    alerts.unshift(alert); 
+ 
+    localStorage.setItem( 
+        "forestguard_alerts", 
+        JSON.stringify(alerts) 
+    ); 
+ 
+    showNotification(alert); 
+} 
+ 
+ 
+/* RESULT HTML */ 
+ 
+function resultHTML(d){ 
+ 
+    let action="No emergency action required."; 
+ 
+    if(d.classification==="Wild Animal"){ 
+        action= 
+        "Notify control room and use the configured demonstration warning mechanism."; 
+    } 
+ 
+    if(d.classification==="Unauthorized Human"){ 
+        action= 
+        "Send security alert to the control room."; 
+    } 
+ 
+    if(d.classification==="Hunting Threat"){ 
+        action= 
+        "Generate high-priority control-room security response."; 
+    } 
+ 
+    if(d.classification==="Forest Fire"){ 
+        action= 
+        "Generate immediate fire alert and investigate the location."; 
+    } 
+ 
+    return ` 
+ 
+    <div style="padding:10px"> 
+ 
+        <div style="font-size:25px;margin-bottom:15px"> 
+            ${d.classification==="Wild Animal"?"🐘": 
+              d.classification==="Domestic Animal"?"🐄": 
+              d.classification==="Forest Fire"?"🔥": 
+              d.classification==="Hunting Threat"?"🏹":"👤"} 
+            <b>${d.object_name}</b> 
+        </div> 
+ 
+        <div class="alert ${ 
+            d.threat_level==="CRITICAL" || 
+            d.threat_level==="HIGH" 
+            ?"alert-critical":"alert-medium" 
+        }"> 
+ 
+            <b>${d.classification}</b> 
+ 
+            <p> 
+            Confidence: ${d.confidence}% 
+            </p> 
+ 
+            <p> 
+            Threat Level: ${d.threat_level} 
+            </p> 
+ 
+        </div> 
+ 
+        <p class="muted"> 
+        Location: ${d.location} 
+        </p> 
+ 
+        <p class="muted"> 
+        Camera: ${d.camera} 
+        </p> 
+ 
+        <p class="muted"> 
+        Date/Time: ${formatDate(d.detected_at)} 
+        </p> 
+ 
+        <br> 
+ 
+        <b>Recommended Action</b> 
+ 
+        <p class="muted" style="margin-top:6px"> 
+        ${action} 
+        </p> 
+ 
+    </div> 
+    `; 
+} 
+ 
+ 
+/* DEMO EVENTS */ 
+ 
+function demoEvent(type){ 
+ 
+    let d; 
+ 
+    if(type==="wildlife"){ 
+ 
+        d=createDetection( 
+            "Elephant", 
+            "Wild Animal", 
+            96, 
+            "HIGH", 
+            "Farm Boundary", 
+            "⚠ WILDLIFE ALERT - Elephant detected near Farm Boundary Camera 01." 
+        ); 
+ 
+        playWarning(); 
+ 
+    }else if(type==="domestic"){ 
+ 
+        d=createDetection( 
+            "Cow", 
+            "Domestic Animal", 
+            94, 
+            "NO THREAT", 
+            "Forest Zone A", 
+            "Domestic animal detected. No emergency alert required." 
+        ); 
+ 
+    }else if(type==="human"){ 
+ 
+        d=createDetection( 
+            "Person", 
+            "Unauthorized Human", 
+            91, 
+            "HIGH", 
+            "Restricted Zone", 
+            "⚠ SECURITY ALERT - Possible unauthorized human entry detected." 
+        ); 
+ 
+    }else if(type==="hunting"){ 
+ 
+        d=createDetection( 
+            "Hunter", 
+            "Hunting Threat", 
+            89, 
+            "CRITICAL", 
+            "Restricted Zone", 
+            "🏹 HUNTING THREAT DETECTED - High-priority security alert." 
+        ); 
+ 
+    }else if(type==="fire"){ 
+ 
+        d=createDetection( 
+            "Fire", 
+            "Forest Fire", 
+            97, 
+            "CRITICAL", 
+            "Forest Zone B", 
+            "🔥 FIRE ALERT - Possible forest fire detected at Camera 02." 
+        ); 
+ 
+    }else{ 
+ 
+        showToast( 
+            "NO DETECTION", 
+            "System status: NORMAL / NO THREAT.", 
+            false 
+        ); 
+ 
+        return; 
+    } 
+ 
+    showToast( 
+        "DEMO EVENT CREATED", 
+        d.object_name + " processed successfully.", 
+        d.threat_level==="CRITICAL" || 
+        d.threat_level==="HIGH" 
+    ); 
+} 
+ 
+ 
+/* FIRE */ 
+ 
+function simulateFire(){ 
+ 
+    demoEvent("fire"); 
+ 
+    document.getElementById("temperature") 
+        .textContent="78.5°C"; 
+ 
+    document.getElementById("smoke") 
+        .textContent="89%"; 
+ 
+    document.getElementById("fireRisk") 
+        .textContent="FIRE DETECTED"; 
+ 
+    document.getElementById("fireRisk") 
+        .className="sensor-value red"; 
+ 
+    document.getElementById("sensorMessage").innerHTML=` 
+ 
+        <b>🔥 FIRE DETECTED</b> 
+ 
+        <p> 
+        High temperature and simulated smoke readings indicate 
+        a fire event. A high-priority control-room alert has been created. 
+        </p> 
+ 
+        <span class="badge badge-red"> 
+        CRITICAL 
+        </span> 
+    `; 
+} 
+ 
+ 
+/* ALERTS */ 
+ 
+function renderAlerts(){ 
+ 
+    const container = 
+        document.getElementById("alertsContainer"); 
+ 
+    if(!alerts.length){ 
+ 
+        container.innerHTML=` 
+ 
+        <div style="text-align:center;padding:50px;color:#668174"> 
+ 
+            <div style="font-size:40px">✅</div> 
+ 
+            <h3>No Active Alerts</h3> 
+ 
+            <p> 
+            Forest monitoring system is currently normal. 
+            </p> 
+ 
+        </div> 
+ 
+        `; 
+ 
+        return; 
+    } 
+ 
+    container.innerHTML = 
+        alerts.map(a => { 
+ 
+            const detection = 
+                detections.find( 
+                    d => d.id===a.detection_id 
+                ); 
+ 
+            return ` 
+ 
+            <div class="alert ${ 
+                a.severity==="CRITICAL" 
+                ?"alert-critical": 
+                a.severity==="HIGH" 
+                ?"alert-high": 
+                "alert-medium" 
+            }"> 
+ 
+                <div class="alert-head"> 
+ 
+                    <div> 
+                        <b> 
+                        ${iconFor(a.alert_type)} 
+                        ${a.alert_type.toUpperCase()} 
+                        </b> 
+ 
+                        <p>${a.message}</p> 
+                    </div> 
+ 
+                    <span class="badge ${ 
+                        a.severity==="CRITICAL" 
+                        ?"badge-red": 
+                        a.severity==="HIGH" 
+                        ?"badge-orange": 
+                        "badge-yellow" 
+                    }"> 
+                    ${a.severity} 
+                    </span> 
+ 
+                </div> 
+ 
+                <p> 
+                Alert ID: ${a.id}<br> 
+                Object: ${detection?.object_name || "-"}<br> 
+                Confidence: ${detection?.confidence || 0}%<br> 
+                Camera: ${detection?.camera || "-"}<br> 
+                Location: ${detection?.location || "-"}<br> 
+                Date: ${formatDate(a.created_at)} 
+                </p> 
+ 
+                <div class="actions"> 
+ 
+                    <span class="badge badge-blue"> 
+                    ${a.status} 
+                    </span> 
+ 
+                    <button 
+                    class="btn btn-dark" 
+                    onclick="acknowledgeAlert('${a.id}')"> 
+                    Acknowledge 
+                    </button> 
+ 
+                    <button 
+                    class="btn btn-green" 
+                    onclick="resolveAlert('${a.id}')"> 
+                    Resolve 
+                    </button> 
+ 
+                    <button 
+                    class="btn btn-dark" 
+                    onclick="viewAlert('${a.id}')"> 
+                    View Details 
+                    </button> 
+ 
+                </div> 
+ 
+            </div> 
+ 
+            `; 
+ 
+        }).join(""); 
+} 
+ 
+ 
+function acknowledgeAlert(id){ 
+ 
+    const a=alerts.find(x=>x.id===id); 
+ 
+    if(!a) return; 
+ 
+    a.status="Acknowledged"; 
+    a.acknowledged_at=new Date().toISOString(); 
+ 
+    saveAlerts(); 
+ 
+    renderAlerts(); 
+ 
+    showToast( 
+        "ALERT ACKNOWLEDGED", 
+        id + " has been acknowledged.", 
+        false 
+    ); 
+} 
+ 
+ 
+function resolveAlert(id){ 
+ 
+    const a=alerts.find(x=>x.id===id); 
+ 
+    if(!a) return; 
+ 
+    a.status="Resolved"; 
+    a.resolved_at=new Date().toISOString(); 
+ 
+    saveAlerts(); 
+ 
+    renderAlerts(); 
+    renderDashboard(); 
+ 
+    showToast( 
+        "ALERT RESOLVED", 
+        id + " has been marked resolved.", 
+        false 
+    ); 
+} 
+ 
+ 
+function viewAlert(id){ 
+ 
+    const a=alerts.find(x=>x.id===id); 
+ 
+    if(!a) return; 
+ 
+    const d= 
+        detections.find( 
+            x=>x.id===a.detection_id 
+        ); 
+ 
+    document.getElementById("modalContent").innerHTML=` 
+ 
+        <div class="alert alert-critical"> 
+ 
+        <h3>${a.message}</h3> 
+ 
+        <p> 
+        Alert ID: ${a.id} 
+        </p> 
+ 
+        </div> 
+ 
+        <div class="grid2"> 
+ 
+        <div> 
+        <span class="muted">Object</span> 
+        <h3>${d?.object_name || "-"}</h3> 
+        </div> 
+ 
+        <div> 
+        <span class="muted">Confidence</span> 
+        <h3>${d?.confidence || 0}%</h3> 
+        </div> 
+ 
+        <div> 
+        <span class="muted">Location</span> 
+        <h3>${d?.location || "-"}</h3> 
+        </div> 
+ 
+        <div> 
+        <span class="muted">Camera</span> 
+        <h3>${d?.camera || "-"}</h3> 
+        </div> 
+ 
+        <div> 
+        <span class="muted">Severity</span> 
+        <h3>${a.severity}</h3> 
+        </div> 
+ 
+        <div> 
+        <span class="muted">Status</span> 
+        <h3>${a.status}</h3> 
+        </div> 
+ 
+        </div> 
+    `; 
+ 
+    document.getElementById("detailsModal") 
+        .style.display="flex"; 
+} 
+ 
+ 
+function closeModal(){ 
+ 
+    document.getElementById("detailsModal") 
+        .style.display="none"; 
+} 
+ 
+ 
+function saveAlerts(){ 
+ 
+    localStorage.setItem( 
+        "forestguard_alerts", 
+        JSON.stringify(alerts) 
+    ); 
+} 
+ 
+ 
+/* HISTORY */ 
+ 
+function renderHistory(){ 
+ 
+    const table = 
+        document.getElementById("historyTable"); 
+ 
+    if(!table) return; 
+ 
+    const search = 
+        (document.getElementById("historySearch")?.value || "") 
+        .toLowerCase(); 
+ 
+    const type = 
+        document.getElementById("historyType")?.value || ""; 
+ 
+    const threat = 
+        document.getElementById("historyThreat")?.value || ""; 
+ 
+    let filtered=detections.filter(d => { 
+ 
+        const matchesSearch = 
+            !search || 
+            d.object_name.toLowerCase().includes(search) || 
+            d.location.toLowerCase().includes(search); 
+ 
+        const matchesType = 
+            !type || 
+            d.classification===type; 
+ 
+        const matchesThreat = 
+            !threat || 
+            d.threat_level===threat; 
+ 
+        return matchesSearch && 
+               matchesType && 
+               matchesThreat; 
+    }); 
+ 
+    if(!filtered.length){ 
+ 
+        table.innerHTML=` 
+ 
+        <tr> 
+        <td colspan="9" style="text-align:center;padding:40px"> 
+        No detection records found. 
+        </td> 
+        </tr> 
+ 
+        `; 
+ 
+        return; 
+    } 
+ 
+    table.innerHTML = 
+        filtered.map(d => ` 
+ 
+        <tr> 
+ 
+        <td>${d.id}</td> 
+ 
+        <td><b>${d.object_name}</b></td> 
+ 
+        <td>${d.classification}</td> 
+ 
+        <td>${d.confidence}%</td> 
+ 
+        <td> 
+        <span class="badge ${ 
+            d.threat_level==="CRITICAL" || 
+            d.threat_level==="HIGH" 
+            ?"badge-red": 
+            d.threat_level==="NO THREAT" 
+            ?"badge-green": 
+            "badge-yellow" 
+        }"> 
+        ${d.threat_level} 
+        </span> 
+        </td> 
+ 
+        <td>${d.location}</td> 
+ 
+        <td>${d.camera}</td> 
+ 
+        <td>${formatDate(d.detected_at)}</td> 
+ 
+        <td>${d.status}</td> 
+ 
+        </tr> 
+ 
+        `).join(""); 
+} 
+ 
+ 
+/* DASHBOARD */ 
+ 
+function renderDashboard(){ 
+ 
+    document.getElementById("totalDetections") 
+        .textContent=detections.length; 
+ 
+    document.getElementById("wildlifeCount") 
+        .textContent= 
+        detections.filter( 
+            d=>d.classification==="Wild Animal" 
+        ).length; 
+ 
+    document.getElementById("domesticCount") 
+        .textContent= 
+        detections.filter( 
+            d=>d.classification==="Domestic Animal" 
+        ).length; 
+ 
+    document.getElementById("humanCount") 
+        .textContent= 
+        detections.filter( 
+            d=>d.classification==="Unauthorized Human" 
+        ).length; 
+ 
+    document.getElementById("huntingCount") 
+        .textContent= 
+        detections.filter( 
+            d=>d.classification==="Hunting Threat" 
+        ).length; 
+ 
+    document.getElementById("fireCount") 
+        .textContent= 
+        detections.filter( 
+            d=>d.classification==="Forest Fire" 
+        ).length; 
+ 
+    document.getElementById("activeAlerts") 
+        .textContent= 
+        alerts.filter( 
+            a=>a.status!=="Resolved" 
+        ).length; 
+ 
+    const table = 
+        document.getElementById("recentTable"); 
+ 
+    if(!detections.length){ 
+ 
+        table.innerHTML=` 
+ 
+        <tr> 
+        <td colspan="6" style="text-align:center;padding:35px"> 
+        No detections yet. Use Demo Mode to generate an event. 
+        </td> 
+        </tr> 
+ 
+        `; 
+ 
+    }else{ 
+ 
+        table.innerHTML = 
+        detections.slice(0,8).map(d=>` 
+ 
+        <tr> 
+ 
+        <td>${d.object_name}</td> 
+ 
+        <td>${d.classification}</td> 
+ 
+        <td>${d.confidence}%</td> 
+ 
+        <td> 
+        <span class="badge ${ 
+        d.threat_level==="CRITICAL" || 
+        d.threat_level==="HIGH" 
+        ?"badge-red": 
+        d.threat_level==="NO THREAT" 
+        ?"badge-green": 
+        "badge-yellow" 
+        }"> 
+        ${d.threat_level} 
+        </span> 
+        </td> 
+ 
+        <td>${d.location}</td> 
+ 
+        <td>${formatDate(d.detected_at)}</td> 
+ 
+        </tr> 
+ 
+        `).join(""); 
+    } 
+} 
+ 
+ 
+/* CHART */ 
+ 
+function updateChart(){ 
+ 
+    const chart = 
+        document.getElementById("chart"); 
+ 
+    if(!chart) return; 
+ 
+    const values=[ 
+        4, 
+        7, 
+        5, 
+        9, 
+        6, 
+        11, 
+        Math.max(3,detections.length) 
+    ]; 
+ 
+    const labels=[ 
+        "Mon", 
+        "Tue", 
+        "Wed", 
+        "Thu", 
+        "Fri", 
+        "Sat", 
+        "Today" 
+    ]; 
+ 
+    chart.innerHTML = 
+        values.map( 
+            (v,i)=>` 
+ 
+            <div 
+            class="bar" 
+            style="height:${Math.min(100,v*7)}%" 
+            title="${v} detections"> 
+ 
+            <span>${labels[i]}</span> 
+ 
+            </div> 
+ 
+            ` 
+        ).join(""); 
+} 
+ 
+ 
+/* NOTIFICATIONS */ 
+ 
+function showNotification(alert){ 
+ 
+    const title = 
+        alert.alert_type==="Forest Fire" 
+        ?"🔥 FIRE ALERT": 
+        alert.alert_type==="Wild Animal" 
+        ?"⚠ WILDLIFE ALERT": 
+        alert.alert_type==="Hunting Threat" 
+        ?"🏹 HUNTING ALERT": 
+        "⚠ SECURITY ALERT"; 
+ 
+    showToast( 
+        title, 
+        alert.message, 
+        alert.severity==="CRITICAL" || 
+        alert.severity==="HIGH" 
+    ); 
+ 
+    /* 
+       Browser notification. 
+       User must grant permission. 
+    */ 
+ 
+    if( 
+        "Notification" in window && 
+        Notification.permission==="granted" 
+    ){ 
+ 
+        new Notification( 
+            title, 
+            { 
+                body:alert.message 
+            } 
+        ); 
+    } 
+} 
+ 
+ 
+async function requestNotifications(){ 
+ 
+    if( 
+        "Notification" in window && 
+        Notification.permission==="default" 
+    ){ 
+ 
+        await Notification.requestPermission(); 
+    } 
+} 
+ 
+ 
+/* TOAST */ 
+ 
+function showToast(title,text,critical){ 
+ 
+    const container = 
+        document.getElementById("toastContainer"); 
+ 
+    const toast = 
+        document.createElement("div"); 
+ 
+    toast.className = 
+        "toast " + (critical?"critical":""); 
+ 
+    toast.innerHTML=` 
+ 
+        <div class="toast-title"> 
+        ${title} 
+        </div> 
+ 
+        <div class="toast-text"> 
+        ${text} 
+        </div> 
+ 
+    `; 
+ 
+    container.appendChild(toast); 
+ 
+    setTimeout( 
+        ()=>toast.remove(), 
+        5000 
+    ); 
+} 
+ 
+ 
+/* SOUND */ 
+ 
+async function playWarning(){ 
+ 
+    if(soundMuted){ 
+ 
+        document.getElementById("soundStatus") 
+            .textContent="MUTED"; 
+ 
+        return; 
+    } 
+ 
+    try{ 
+ 
+        audioContext = 
+        audioContext || 
+        new ( 
+            window.AudioContext || 
+            window.webkitAudioContext 
+        )(); 
+ 
+        if(audioContext.state === "suspended") await audioContext.resume(); 
+ 
+        const oscillator = 
+            audioContext.createOscillator(); 
+ 
+        const gain = 
+            audioContext.createGain(); 
+ 
+        oscillator.frequency.value=750; 
+ 
+        oscillator.type="sine"; 
+ 
+        gain.gain.value=.15; 
+ 
+        oscillator.connect(gain); 
+ 
+        gain.connect(audioContext.destination); 
+ 
+        oscillator.start(audioContext.currentTime); 
+ 
+        setTimeout( 
+            ()=>oscillator.stop(), 
+            900 
+        ); 
+ 
+        document.getElementById("soundStatus") 
+            .textContent="WARNING SOUND PLAYING"; 
+ 
+    }catch(e){ 
+ 
+        document.getElementById("soundStatus") 
+            .textContent="BROWSER AUDIO BLOCKED"; 
+    } 
+} 
+ 
+function unlockAudio(){ 
+    try{ 
+        audioContext = audioContext || new (window.AudioContext || window.webkitAudioContext)(); 
+        if(audioContext.state === "suspended") audioContext.resume(); 
+    }catch(e){ 
+        const status = document.getElementById("soundStatus"); 
+        if(status) status.textContent = "BROWSER AUDIO BLOCKED"; 
+    } 
+} 
+ 
+function stopWarning(){ 
+ 
+    document.getElementById("soundStatus") 
+        .textContent="SOUND STOPPED"; 
+} 
+ 
+ 
+function toggleMute(){ 
+    soundMuted=!soundMuted; 
+    document.getElementById("soundStatus").textContent=soundMuted ? "MUTED" : "SOUND READY"; 
+} 
+ 
+function muteWarning(){ 
+    soundMuted=true; 
+    document.getElementById("soundStatus").textContent="MUTED"; 
+} 
+ 
+/* HELPERS */ 
+ 
+function formatDate(date){ 
+ 
+    return new Date(date).toLocaleString( 
+        "en-IN", 
+        { 
+            day:"2-digit", 
+            month:"short", 
+            year:"numeric", 
+            hour:"2-digit", 
+            minute:"2-digit" 
+        } 
+    ); 
+} 
+ 
+ 
+function iconFor(type){ 
+ 
+    if(type==="Wild Animal") return "🐘"; 
+    if(type==="Forest Fire") return "🔥"; 
+    if(type==="Hunting Threat") return "🏹"; 
+    if(type==="Unauthorized Human") return "👤"; 
+ 
+    return "⚠️"; 
+} 
+ 
+ 
+/* BROWSER NOTIFICATION PERMISSION */ 
+ 
+requestNotifications(); 
+ 
+ 
+/* START */ 
+ 
+checkAuth(); 
+ 
+</script> 
+ 
+</body> 
+</html> 
