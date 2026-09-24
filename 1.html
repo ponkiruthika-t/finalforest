@@ -4,9 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ForestGuard - AI Forest Monitoring</title>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1"></script>
-
 <style>
 *{
     box-sizing:border-box;
@@ -1940,7 +1937,6 @@ localStorage.setItem("forestguard_alerts", JSON.stringify(alerts));
 let stream = null;
 let capturedImage = null;
 let uploadedFile = null;
-let mobileNetModel = null;
 let audioContext = null;
 let soundMuted = false;
 
@@ -2035,13 +2031,9 @@ function initialize(){
     renderAlerts();
     updateChart();
     checkYoloStatus();
-    loadMobileNet();
 }
 
-async function loadMobileNet(){
-    try { mobileNetModel = await mobilenet.load(); }
-    catch { showToast("LOCAL IMAGE MODEL OFFLINE", "The browser could not load MobileNet.", true); }
-}
+
 
 async function checkYoloStatus(){
     try{
@@ -2314,11 +2306,6 @@ async function sendImageToBackend(file, fileName, source){
     formData.append("image", file, fileName);
     formData.append("source", source);
     formData.append("zone", "Forest Zone A");
-    const localResult = await classifyWithMobileNet(file);
-    if(localResult){
-        formData.append("modelResult", JSON.stringify(localResult));
-        formData.append("modelProvider", "browser-mobilenet");
-    }
     let response;
     try {
         response = await fetchBackend("/api/detect", { method: "POST", body: formData });
@@ -2339,21 +2326,7 @@ async function sendImageToBackend(file, fileName, source){
     detection.model = payload.model || "YOLOv8 demo"; 
     return detection; 
 } 
-async function classifyWithMobileNet(file){ 
-    if(!mobileNetModel) return null; 
-    const image = new Image(); 
-    image.src = URL.createObjectURL(file); 
-    await new Promise((resolve, reject) => { image.onload = resolve; image.onerror = reject; }); 
-    const predictions = await mobileNetModel.classify(image, 5); 
-    const best = predictions[0]; 
-    if(!best) return null; 
-    const value = best.className.toLowerCase(); 
-    const wild = ["lion", "tiger", "leopard", "cheetah", "jaguar", "lynx", "wolf", "fox", "bear", "elephant", "deer", "zebra", "giraffe"]; 
-    const domestic = ["dog", "cat", "cow", "horse", "sheep", "goat", "pig", "ox"]; 
-    const label = wild.some(item => value.includes(item)) ? "Wild animal" : domestic.some(item => value.includes(item)) ? "Domestic animal" : "No threat"; 
-    URL.revokeObjectURL(image.src); 
-    return { label, confidence: best.probability, raw_label: best.className }; 
-} 
+ 
 function escapeHtml(value){ return String(value).replace(/[&<>"']/g, character => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[character])); } 
  
  
@@ -3359,3 +3332,8 @@ checkAuth();
  
 </body> 
 </html> 
+
+
+
+
+
